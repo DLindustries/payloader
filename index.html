@@ -2,32 +2,83 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title><!DOCTYPE html>
-        <html lang="en">
-        <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Discord Webhook Message Sender</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discord Webhook Message Sender</title>
 </head>
 <body>
 <h1>Send a Message to Discord</h1>
 <form id="webhookForm">
     <label for="message">Message:</label><br>
     <textarea id="message" name="message" rows="4" cols="50"></textarea><br><br>
+
+    <label>
+        <input type="checkbox" id="premiumCheck" onclick="togglePremium()"> Use Premium Webhook
+    </label><br>
+    <div id="passwordContainer" style="display:none;">
+        <label for="password">Password:</label>
+        <input type="password" id="password"><br>
+    </div><br>
+
     <button type="button" onclick="sendMessage()">Send Message</button>
 </form>
 
 <script>
+    let commonerWebhookUrl = "";
+    let premiumWebhookUrl = "";
+    let premiumPassword = "";
+
+    async function loadWebhooks() {
+        // Fetch the common webhook URL from commoner.txt
+        const commonerResponse = await fetch("https://raw.githubusercontent.com/DLindustries/database/main/commoner.txt");
+        commonerWebhookUrl = (await commonerResponse.text()).trim();
+
+        // Fetch the premium webhook URL from premium.txt
+        const premiumResponse = await fetch("https://raw.githubusercontent.com/DLindustries/database/main/premium.txt");
+        premiumWebhookUrl = (await premiumResponse.text()).trim();
+
+        // Fetch the premium password from identify.txt
+        const passwordResponse = await fetch("https://raw.githubusercontent.com/DLindustries/database/main/identify.txt");
+        premiumPassword = (await passwordResponse.text()).trim();
+    }
+
+    loadWebhooks();
+
+    function togglePremium() {
+        const passwordContainer = document.getElementById("passwordContainer");
+        passwordContainer.style.display = document.getElementById("premiumCheck").checked ? "block" : "none";
+    }
+
+    function sanitizeMessage(message) {
+        return message.replace(/@/g, ""); // Remove all "@" symbols
+    }
+
     async function sendMessage() {
-        const webhookUrl = "https://discordapp.com/api/webhooks/1300577261245829201/YroLvLyN1KHWH7UBCMkAOwZdeop6MkBrD3faF8OynkkzNCMenhwvBqppGDHcru91vgwC"; // replace with your webhook URL
-        const messageContent = document.getElementById("message").value;
+        let messageContent = document.getElementById("message").value;
+        const isPremium = document.getElementById("premiumCheck").checked;
+        let webhookUrl = commonerWebhookUrl;
 
         if (!messageContent) {
             alert("Please enter a message.");
             return;
         }
 
-        const payload = JSON.stringify({ content: messageContent });
+        // If premium is selected, verify password and switch to premium webhook
+        if (isPremium) {
+            const passwordInput = document.getElementById("password").value;
+            if (passwordInput !== premiumPassword) {
+                alert("Incorrect password for premium webhook.");
+                return;
+            }
+            webhookUrl = premiumWebhookUrl;
+        } else {
+            // Sanitize the message to prevent commoners from using mentions
+            messageContent = sanitizeMessage(messageContent);
+        }
+
+        const payload = JSON.stringify({
+            content: messageContent,
+            ...(isPremium && { allowed_mentions: { parse: ["everyone", "users", "roles"] } })
+        });
 
         try {
             const response = await fetch(webhookUrl, {
@@ -49,11 +100,5 @@
         }
     }
 </script>
-</body>
-</html>
-</title>
-</head>
-<body>
-
 </body>
 </html>
