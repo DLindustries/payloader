@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title><!DOCTYPE html>
+        <html lang="en">
+        <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Discord Webhook Message Sender</title>
+</head>
+<body>
+<h1>Send a Message to Discord</h1>
+<form id="webhookForm">
+    <label for="message">Message:</label><br>
+    <textarea id="message" name="message" rows="4" cols="50"></textarea><br><br>
+    <button type="button" onclick="sendMessage()">Send Message</button>
+</form>
+
+<script>
+    async function sendMessage() {
+        const webhookUrl = "https://discordapp.com/api/webhooks/1300577261245829201/YroLvLyN1KHWH7UBCMkAOwZdeop6MkBrD3faF8OynkkzNCMenhwvBqppGDHcru91vgwC"; // replace with your webhook URL
+        const messageContent = document.getElementById("message").value;
+
+        if (!messageContent) {
+            alert("Please enter a message.");
+            return;
+        }
+
+        const payload = JSON.stringify({ content: messageContent });
+
+        try {
+            const response = await fetch(webhookUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: payload
+            });
+
+            if (response.ok) {
+                alert("Message sent!");
+            } else {
+                alert("Failed to send message.");
+            }
+        } catch (error) {
+            console.error("Error sending message:", error);
+            alert("An error occurred while sending the message.");
+        }
+    }
+</script>
+</body>
+</html>
+</title>
+</head>
+<body>
+
+</body>
+</html>
