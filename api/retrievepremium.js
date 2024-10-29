@@ -7,43 +7,51 @@ module.exports = async (req, res) => {
     const premiumUrl = "https://raw.githubusercontent.com/DLindustries/database/main/premium.txt";
     const identifyUrl = "https://raw.githubusercontent.com/DLindustries/database/main/identify.txt";
 
-    // Function to check internet connection
     const isConnectedToInternet = async () => {
         try {
             const response = await fetch('https://www.google.com', { method: 'HEAD' });
-            return response.ok; // If we get a response, we're connected
+            return response.ok;
         } catch (error) {
-            return false; // If there's an error, we're likely not connected
+            console.error("Internet connection error:", error);
+            return false;
         }
     };
 
     try {
-        // Check for internet connection
         const isConnected = await isConnectedToInternet();
         if (!isConnected) {
-            return res.status(503).json({ error: "Cannot connect to service api: Are you connected to the internet?" });
+            return res.status(503).json({ error: "Service Unavailable: Are you connected to the internet?" });
         }
 
         if (accessType === 'commoner') {
             const commonerResponse = await fetch(commonerUrl);
+            if (!commonerResponse.ok) {
+                throw new Error(`Failed to fetch commoner webhook: ${commonerResponse.statusText}`);
+            }
             const commonerWebhook = (await commonerResponse.text()).trim();
-            res.status(200).json({ webhook: commonerWebhook });
+            return res.status(200).json({ webhook: commonerWebhook });
         } else if (accessType === 'premium') {
             const identifyResponse = await fetch(identifyUrl);
+            if (!identifyResponse.ok) {
+                throw new Error(`Failed to fetch identify file: ${identifyResponse.statusText}`);
+            }
             const storedPassword = (await identifyResponse.text()).trim();
 
             if (password === storedPassword) {
                 const premiumResponse = await fetch(premiumUrl);
+                if (!premiumResponse.ok) {
+                    throw new Error(`Failed to fetch premium webhook: ${premiumResponse.statusText}`);
+                }
                 const premiumWebhook = (await premiumResponse.text()).trim();
-                res.status(200).json({ authorized: true, webhook: premiumWebhook });
+                return res.status(200).json({ authorized: true, webhook: premiumWebhook });
             } else {
-                res.status(401).json({ authorized: false, error: "Incorrect password." });
+                return res.status(401).json({ authorized: false, error: "Incorrect password." });
             }
         } else {
-            res.status(400).json({ error: "Invalid access type." });
+            return res.status(400).json({ error: "Invalid access type." });
         }
     } catch (error) {
-        console.error("Error fetching data: either our service has been terminated or attacked", error);
-        res.status(500).json({ error: "Server error contact devs and state your circumstances" });
+        console.error("Error fetching data:", error);
+        return res.status(500).json({ error: "Server error: " + error.message });
     }
 };
