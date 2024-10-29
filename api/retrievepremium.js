@@ -1,4 +1,4 @@
-import fetch from 'node-fetch';
+const fetch = (...args) => import('node-fetch').then(mod => mod.default(...args));
 
 
 module.exports = async (req, res) => {
