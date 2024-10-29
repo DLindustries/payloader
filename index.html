@@ -25,20 +25,13 @@
 <script>
     let commonerWebhookUrl = "";
     let premiumWebhookUrl = "";
-    let premiumPassword = "";
 
     async function loadWebhooks() {
         // Fetch the common webhook URL from commoner.txt
         const commonerResponse = await fetch("https://raw.githubusercontent.com/DLindustries/database/main/commoner.txt");
         commonerWebhookUrl = (await commonerResponse.text()).trim();
 
-        // Fetch the premium webhook URL from premium.txt
-        const premiumResponse = await fetch("https://raw.githubusercontent.com/DLindustries/database/main/premium.txt");
-        premiumWebhookUrl = (await premiumResponse.text()).trim();
-
-        // Fetch the premium password from identify.txt
-        const passwordResponse = await fetch("https://raw.githubusercontent.com/DLindustries/database/main/identify.txt");
-        premiumPassword = (await passwordResponse.text()).trim();
+        // Note: Premium webhook URL is not fetched directly anymore
     }
 
     loadWebhooks();
@@ -62,14 +55,28 @@
             return;
         }
 
-        // If premium is selected, verify password and switch to premium webhook
+        // If premium is selected, verify password and get premium webhook from the server
         if (isPremium) {
             const passwordInput = document.getElementById("password").value;
-            if (passwordInput !== premiumPassword) {
-                alert("Incorrect password for premium webhook.");
+            const accessType = "premium";
+
+            // Call the serverless function to validate the password and get the premium webhook
+            const response = await fetch('/api/retrievepremium', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ password: passwordInput, accessType }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                webhookUrl = data.webhook; // Use the premium webhook returned by the server
+            } else {
+                alert(`Error: ${data.error}`);
                 return;
             }
-            webhookUrl = premiumWebhookUrl;
         } else {
             // Sanitize the message to prevent commoners from using mentions
             messageContent = sanitizeMessage(messageContent);

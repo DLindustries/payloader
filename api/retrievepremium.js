@@ -2,8 +2,6 @@
 const fetch = (...args) => import('node-fetch').then(mod => mod.default(...args));
 
 export default async (req, res) => {
-    const { password, accessType } = req.body;
-
     const commonerUrl = "https://raw.githubusercontent.com/DLindustries/database/main/commoner.txt";
     const premiumUrl = "https://raw.githubusercontent.com/DLindustries/database/main/premium.txt";
     const identifyUrl = "https://raw.githubusercontent.com/DLindustries/database/main/identify.txt";
@@ -22,6 +20,12 @@ export default async (req, res) => {
         const isConnected = await isConnectedToInternet();
         if (!isConnected) {
             return res.status(503).json({ error: "Service Unavailable: Are you connected to the internet?" });
+        }
+
+        // Ensure req.body is defined and contains the necessary fields
+        const { password, accessType } = req.body || {};
+        if (!password || !accessType) {
+            return res.status(400).json({ error: "Missing password or access type." });
         }
 
         console.log(`Access Type: ${accessType}`);
