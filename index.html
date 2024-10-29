@@ -23,18 +23,7 @@
 </form>
 
 <script>
-    let commonerWebhookUrl = "";
-    let premiumWebhookUrl = "";
-
-    async function loadWebhooks() {
-        // Fetch the common webhook URL from commoner.txt
-        const commonerResponse = await fetch("https://raw.githubusercontent.com/DLindustries/database/main/commoner.txt");
-        commonerWebhookUrl = (await commonerResponse.text()).trim();
-
-        // Note: Premium webhook URL is not fetched directly anymore
-    }
-
-    loadWebhooks();
+    const apiEndpoint = "https://your-vercel-app.vercel.app/api/retrievepremium";
 
     function togglePremium() {
         const passwordContainer = document.getElementById("passwordContainer");
@@ -46,57 +35,52 @@
     }
 
     async function sendMessage() {
-        let messageContent = document.getElementById("message").value;
+        const messageContent = document.getElementById("message").value;
         const isPremium = document.getElementById("premiumCheck").checked;
-        let webhookUrl = commonerWebhookUrl;
+        const passwordInput = document.getElementById("password").value;
 
         if (!messageContent) {
             alert("Please enter a message.");
             return;
         }
 
-        // If premium is selected, verify password and get premium webhook from the server
-        if (isPremium) {
-            const passwordInput = document.getElementById("password").value;
-            const accessType = "premium";
+        // Set up the request body for the Vercel API
+        const requestBody = {
+            accessType: isPremium ? 'premium' : 'commoner',
+            ...(isPremium && { password: passwordInput })
+        };
 
-            // Call the serverless function to validate the password and get the premium webhook
-            const response = await fetch('/api/retrievepremium', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ password: passwordInput, accessType }),
+        try {
+            // Request the webhook URL from the Vercel API
+            const response = await fetch(apiEndpoint, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(requestBody),
             });
 
             const data = await response.json();
 
-            if (response.ok) {
-                webhookUrl = data.webhook; // Use the premium webhook returned by the server
-            } else {
-                alert(`Error: ${data.error}`);
+            if (!response.ok) {
+                alert(data.error || "Failed to retrieve webhook URL.");
                 return;
             }
-        } else {
-            // Sanitize the message to prevent commoners from using mentions
-            messageContent = sanitizeMessage(messageContent);
-        }
 
-        const payload = JSON.stringify({
-            content: messageContent,
-            ...(isPremium && { allowed_mentions: { parse: ["everyone", "users", "roles"] } })
-        });
+            const webhookUrl = data.webhook;
+            const sanitizedMessage = isPremium ? messageContent : sanitizeMessage(messageContent);
 
-        try {
-            const response = await fetch(webhookUrl, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: payload
+            const payload = JSON.stringify({
+                content: sanitizedMessage,
+                ...(isPremium && { allowed_mentions: { parse: ["everyone", "users", "roles"] } })
             });
 
-            if (response.ok) {
+            // Send the message to the Discord webhook
+            const webhookResponse = await fetch(webhookUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: payload,
+            });
+
+            if (webhookResponse.ok) {
                 alert("Message sent!");
             } else {
                 alert("Failed to send message.");
