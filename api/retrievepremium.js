@@ -1,7 +1,7 @@
+// Use ES module syntax
 const fetch = (...args) => import('node-fetch').then(mod => mod.default(...args));
 
-
-module.exports = async (req, res) => {
+export default async (req, res) => {
     const { password, accessType } = req.body;
 
     const commonerUrl = "https://raw.githubusercontent.com/DLindustries/database/main/commoner.txt";
@@ -24,6 +24,8 @@ module.exports = async (req, res) => {
             return res.status(503).json({ error: "Service Unavailable: Are you connected to the internet?" });
         }
 
+        console.log(`Access Type: ${accessType}`);
+
         if (accessType === 'commoner') {
             const commonerResponse = await fetch(commonerUrl);
             if (!commonerResponse.ok) {
@@ -37,6 +39,9 @@ module.exports = async (req, res) => {
                 throw new Error(`Failed to fetch identify file: ${identifyResponse.statusText}`);
             }
             const storedPassword = (await identifyResponse.text()).trim();
+
+            console.log(`Stored Password: ${storedPassword}`);
+            console.log(`Provided Password: ${password}`);
 
             if (password === storedPassword) {
                 const premiumResponse = await fetch(premiumUrl);
