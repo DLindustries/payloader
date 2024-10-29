@@ -23,67 +23,45 @@
 </form>
 
 <script>
-    const apiEndpoint = "https://your-vercel-app.vercel.app/api/retrievepremium";
-
-    function togglePremium() {
+    async function togglePremium() {
         const passwordContainer = document.getElementById("passwordContainer");
         passwordContainer.style.display = document.getElementById("premiumCheck").checked ? "block" : "none";
     }
 
-    function sanitizeMessage(message) {
-        return message.replace(/@/g, ""); // Remove all "@" symbols
-    }
-
     async function sendMessage() {
-        const messageContent = document.getElementById("message").value;
+        let messageContent = document.getElementById("message").value;
         const isPremium = document.getElementById("premiumCheck").checked;
-        const passwordInput = document.getElementById("password").value;
 
         if (!messageContent) {
             alert("Please enter a message.");
             return;
         }
 
-        // Set up the request body for the Vercel API
-        const requestBody = {
-            accessType: isPremium ? 'premium' : 'commoner',
-            ...(isPremium && { password: passwordInput })
+        let accessType = isPremium ? 'premium' : 'commoner';
+        let payload = {
+            message: messageContent,
+            accessType: accessType
         };
 
+        if (isPremium) {
+            const passwordInput = document.getElementById("password").value;
+            payload.password = passwordInput;
+        }
+
         try {
-            // Request the webhook URL from the Vercel API
-            const response = await fetch(apiEndpoint, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(requestBody),
+            const response = await fetch('/api/retrievepremium', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
             });
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                alert(data.error || "Failed to retrieve webhook URL.");
-                return;
-            }
-
-            const webhookUrl = data.webhook;
-            const sanitizedMessage = isPremium ? messageContent : sanitizeMessage(messageContent);
-
-            const payload = JSON.stringify({
-                content: sanitizedMessage,
-                ...(isPremium && { allowed_mentions: { parse: ["everyone", "users", "roles"] } })
-            });
-
-            // Send the message to the Discord webhook
-            const webhookResponse = await fetch(webhookUrl, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: payload,
-            });
-
-            if (webhookResponse.ok) {
-                alert("Message sent!");
+            if (response.ok) {
+                const data = await response.json();
+                alert("Webhook URL: " + (isPremium ? data.webhook : data.webhook));
             } else {
-                alert("Failed to send message.");
+                alert("Failed to retrieve webhook: " + response.statusText);
             }
         } catch (error) {
             console.error("Error sending message:", error);

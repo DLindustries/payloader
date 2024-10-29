@@ -2,9 +2,6 @@
 const fetch = (...args) => import('node-fetch').then(mod => mod.default(...args));
 
 export default async (req, res) => {
-    const { password, accessType } = req.body;
-
-    // URLs for webhook files
     const commonerUrl = "https://raw.githubusercontent.com/DLindustries/database/main/commoner.txt";
     const premiumUrl = "https://raw.githubusercontent.com/DLindustries/database/main/premium.txt";
     const identifyUrl = "https://raw.githubusercontent.com/DLindustries/database/main/identify.txt";
@@ -25,10 +22,14 @@ export default async (req, res) => {
             return res.status(503).json({ error: "Service Unavailable: Are you connected to the internet?" });
         }
 
+        const { password, accessType } = req.body || {};
+        if (!accessType) {
+            return res.status(400).json({ error: "Missing access type." });
+        }
+
         console.log(`Access Type: ${accessType}`);
 
         if (accessType === 'commoner') {
-            // Retrieve the commoner webhook URL
             const commonerResponse = await fetch(commonerUrl);
             if (!commonerResponse.ok) {
                 throw new Error(`Failed to fetch commoner webhook: ${commonerResponse.statusText}`);
@@ -36,15 +37,11 @@ export default async (req, res) => {
             const commonerWebhook = (await commonerResponse.text()).trim();
             return res.status(200).json({ webhook: commonerWebhook });
         } else if (accessType === 'premium') {
-            // Validate password and retrieve premium webhook if correct
             const identifyResponse = await fetch(identifyUrl);
             if (!identifyResponse.ok) {
                 throw new Error(`Failed to fetch identify file: ${identifyResponse.statusText}`);
             }
             const storedPassword = (await identifyResponse.text()).trim();
-
-            console.log(`Stored Password: ${storedPassword}`);
-            console.log(`Provided Password: ${password}`);
 
             if (password === storedPassword) {
                 const premiumResponse = await fetch(premiumUrl);
