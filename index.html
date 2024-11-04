@@ -77,19 +77,19 @@
 </head>
 <body>
 <h1>Enter Payload</h1>
-<form id="webhookForm">
+<form id="webhookForm" onsubmit="event.preventDefault(); sendMessage();">
     <label for="message">Message:</label><br>
-    <textarea id="message" name="message" rows="4" cols="50" placeholder="Enter your message here..."></textarea><br>
+    <textarea id="message" name="message" rows="4" cols="50" placeholder="Enter your message here..." required></textarea><br>
 
     <label>
         <input type="checkbox" id="premiumCheck" onclick="togglePremium()"> Use Premium Webhook
     </label><br>
     <div id="passwordContainer" style="display:none;">
         <label for="password">Password:</label>
-        <input type="password" id="password"><br>
+        <input type="password" id="password" required><br>
     </div><br>
 
-    <button type="button" onclick="sendMessage()">Send Message</button>
+    <button type="submit">Send Message</button>
 </form>
 
 <h2>Recent Commits</h2>
@@ -110,17 +110,14 @@
     function togglePremium() {
         const passwordContainer = document.getElementById("passwordContainer");
         passwordContainer.style.display = document.getElementById("premiumCheck").checked ? 'block' : 'none';
-        document.getElementById("password").value = ''; // Clear the password field when toggling
+        if (!passwordContainer.style.display) {
+            document.getElementById("password").value = ''; // Clear password if not visible
+        }
     }
 
     async function sendMessage() {
         let messageContent = document.getElementById("message").value;
         const isPremium = document.getElementById("premiumCheck").checked;
-
-        if (!messageContent) {
-            alert("Please enter a message.");
-            return;
-        }
 
         let payload = {
             message: messageContent,
@@ -129,10 +126,6 @@
 
         if (isPremium) {
             const passwordInput = document.getElementById("password").value;
-            if (!passwordInput) {
-                alert("Please enter the password.");
-                return; // Ensure password is provided for premium access
-            }
             payload.password = passwordInput;
         }
 
@@ -194,18 +187,14 @@
 
             for (let commit of commits) {
                 const row = commitTable.insertRow();
-
-                // Insert cells for message, date, and time
                 const messageCell = row.insertCell(0);
                 const dateCell = row.insertCell(1);
                 const timeCell = row.insertCell(2);
 
-                // Format the date and time
                 const commitDate = new Date(commit.date);
                 const date = commitDate.toLocaleDateString();
                 const time = commitDate.toLocaleTimeString();
 
-                // Fill cells with commit data
                 messageCell.innerText = commit.message;
                 dateCell.innerText = date;
                 timeCell.innerText = time;
