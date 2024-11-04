@@ -110,6 +110,7 @@
     function togglePremium() {
         const passwordContainer = document.getElementById("passwordContainer");
         passwordContainer.style.display = document.getElementById("premiumCheck").checked ? 'block' : 'none';
+        document.getElementById("password").value = ''; // Clear the password field when toggling
     }
 
     async function sendMessage() {
@@ -128,6 +129,10 @@
 
         if (isPremium) {
             const passwordInput = document.getElementById("password").value;
+            if (!passwordInput) {
+                alert("Please enter the password.");
+                return; // Ensure password is provided for premium access
+            }
             payload.password = passwordInput;
         }
 
@@ -140,7 +145,7 @@
                 body: JSON.stringify(payload)
             });
 
-            const data = await response.json();
+            const data = await response.json(); // Read response once
 
             if (response.ok) {
                 const webhookUrl = data.webhook;
