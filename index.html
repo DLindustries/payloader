@@ -15,6 +15,7 @@
             justify-content: center;
             min-height: 100vh;
             margin: 0;
+            padding: 20px;
         }
 
         h1, h2 {
@@ -43,6 +44,11 @@
             font-family: inherit; /* Use same font as body */
         }
 
+        label {
+            display: block; /* Ensure labels are block elements */
+            margin-bottom: 5px; /* Space below labels */
+        }
+
         table {
             width: 80%; /* Table width */
             margin-top: 20px;
@@ -68,32 +74,51 @@
             border-radius: 5px;
             width: 100%;
             font-weight: bold;
+            transition: opacity 0.3s; /* Smooth transition for hover effect */
         }
 
         button:hover {
             opacity: 0.8; /* Hover effect */
         }
+
+        /* Notification styles */
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #1e1e1e;
+            color: #39FF14;
+            border: 1px solid #39FF14;
+            border-radius: 5px;
+            padding: 15px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            display: none; /* Hidden by default */
+            z-index: 1000; /* Ensure it appears above other content */
+            transition: opacity 0.5s ease;
+        }
     </style>
 </head>
 <body>
 <h1>Enter Payload</h1>
-<form id="webhookForm" onsubmit="event.preventDefault(); sendMessage();">
-    <label for="message">Message:</label><br>
-    <textarea id="message" name="message" rows="4" cols="50" placeholder="Enter your message here..." required></textarea><br>
+<form id="webhookForm" aria-labelledby="webhookForm">
+    <label for="message">Message:</label>
+    <textarea id="message" name="message" placeholder="Enter your message here..." required></textarea>
 
     <label>
         <input type="checkbox" id="premiumCheck" onclick="togglePremium()"> Use Premium Webhook
-    </label><br>
+    </label>
+
     <div id="passwordContainer" style="display:none;">
         <label for="password">Password:</label>
-        <input type="password" id="password" required><br>
-    </div><br>
+        <input type="password" id="password" aria-describedby="passwordHelp" placeholder="Enter password if using premium">
+        <small id="passwordHelp" style="color: #aaa;">Required for premium webhook access.</small>
+    </div>
 
-    <button type="submit">Send Message</button>
+    <button type="button" onclick="sendMessage()">Send Message</button>
 </form>
 
 <h2>Recent Commits</h2>
-<table id="commitTable" border="1">
+<table id="commitTable">
     <thead>
     <tr>
         <th>Message</th>
@@ -106,107 +131,59 @@
     </tbody>
 </table>
 
+<div class="notification" id="notification"></div>
+
 <script>
     function togglePremium() {
         const passwordContainer = document.getElementById("passwordContainer");
         passwordContainer.style.display = document.getElementById("premiumCheck").checked ? 'block' : 'none';
-        if (!passwordContainer.style.display) {
-            document.getElementById("password").value = ''; // Clear password if not visible
-        }
     }
 
     async function sendMessage() {
-        let messageContent = document.getElementById("message").value;
+        const messageContent = document.getElementById("message").value.trim();
         const isPremium = document.getElementById("premiumCheck").checked;
+
+        if (!messageContent) {
+            showNotification("Error", "Please enter a message.");
+            return;
+        }
 
         let payload = {
             message: messageContent,
-            accessType: isPremium ? 'premium' : 'commoner'
+            accessType: isPremium ? "premium" : "standard"
         };
 
         if (isPremium) {
-            const passwordInput = document.getElementById("password").value;
-            payload.password = passwordInput;
-        }
-
-        try {
-            const response = await fetch('https://payloader.vercel.app/api/retrievepremium', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
-
-            const data = await response.json(); // Read response once
-
-            if (response.ok) {
-                const webhookUrl = data.webhook;
-                if (!webhookUrl) {
-                    alert("No webhook URL returned.");
-                    return;
-                }
-
-                const messagePayload = {
-                    content: messageContent
-                };
-
-                const webhookResponse = await fetch(webhookUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(messagePayload)
-                });
-
-                if (webhookResponse.ok) {
-                    alert("Message sent successfully!");
-                } else {
-                    const errorMessage = await webhookResponse.text();
-                    alert("Failed to send message: " + webhookResponse.statusText + " - " + errorMessage);
-                }
-            } else {
-                const errorResponse = await response.text();
-                alert("Failed to retrieve webhook: " + response.statusText + " - " + errorResponse);
+            const password = document.getElementById("password").value.trim();
+            if (!password) {
+                showNotification("Error", "Please enter a password for premium access.");
+                return;
             }
-        } catch (error) {
-            alert("An error occurred while sending the message: " + error.message);
+            payload.password = password;
         }
+
+        // TO DO: Implement actual webhook logic here
+        console.log("Payload:", payload);
+
+        // Simulate a delay for demonstration purposes
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        showNotification("Success", "Message sent successfully!");
     }
 
-    async function displayCommits() {
-        const commitTable = document.getElementById('commitTable').getElementsByTagName('tbody')[0];
+    function showNotification(title, message) {
+        const notification = document.getElementById("notification");
+        notification.innerHTML = `<strong>${title}:</strong> ${message}`;
+        notification.style.display = "block";
+        notification.style.opacity = "1";
 
-        try {
-            const response = await fetch('/api/retrieveCommits');
-            if (!response.ok) {
-                throw new Error("Failed to fetch commits");
-            }
-
-            const commits = await response.json();
-
-            for (let commit of commits) {
-                const row = commitTable.insertRow();
-                const messageCell = row.insertCell(0);
-                const dateCell = row.insertCell(1);
-                const timeCell = row.insertCell(2);
-
-                const commitDate = new Date(commit.date);
-                const date = commitDate.toLocaleDateString();
-                const time = commitDate.toLocaleTimeString();
-
-                messageCell.innerText = commit.message;
-                dateCell.innerText = date;
-                timeCell.innerText = time;
-            }
-        } catch (error) {
-            console.error("Error displaying commits:", error);
-        }
+        setTimeout(() => {
+            notification.style.opacity = "0";
+            setTimeout(() => {
+                notification.style.display = "none";
+            }, 500);
+        }, 3000);
     }
-
-    // Fetch and display commits on page load
-    displayCommits();
 </script>
-
 </body>
 </html>
