@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sogz</title>
-    <link rel="icon" href="api/logo.png" type="image/png"> <!-- Favicon -->
     <style>
         body {
             background-color: #121212; /* Dark background */
@@ -113,7 +112,7 @@
         .top-buttons button {
             background-color: #2e2e2e; /* Dark background for buttons */
             color: #39FF14; /* Bright green text */
-            border : 1px solid #39FF14; /* Border color */
+            border: 1px solid #39FF14; /* Border color */
             margin-left: 10px; /* Space between buttons */
             padding: 10px;
             border-radius: 5px;
@@ -131,12 +130,6 @@
             left: 20px;
             width: 40px; /* Logo width */
             height: 40px; /* Logo height */
-        }
-
-        .logo img {
-            width: 100%; /* Ensure logo image is fully contained */
-            height: 100%; /* Ensure logo image is fully contained */
-            object-fit: contain; /* Ensure logo image is fully contained */
         }
     </style>
 </head>
@@ -175,14 +168,13 @@
         <th>Time</th>
     </tr>
     </thead>
-    <tbody id="commitData">
+    <tbody>
     <!-- Commit data will be populated here -->
     </tbody>
 </table>
 
 <div class="notification" id="notification"></div>
 
-<script src="retrieveCommit.js"></script>
 <script>
     const webhookUrl = 'YOUR_DISCORD_WEBHOOK_URL_HERE'; // Replace with your Discord webhook URL
 
@@ -226,49 +218,26 @@
             if (response.ok) {
                 showNotification("Success", "Message sent successfully!");
             } else {
-                showNotification("Error", "Failed to send message.");
+                showNotification("Error", "Failed to send message.", true);
             }
         } catch (error) {
-            showNotification("Error", "An error occurred while sending the message.");
+            showNotification("Error", "Failed to send message.", true);
         }
     }
 
-    async function fetchCommits() {
-        try {
-            const commits = await retrieveCommits(); // Call the function from retrieveCommit.js
-            const commitTableBody = document.getElementById("commitData");
-            commitTableBody.innerHTML = "";
-
-            commits.forEach(commit => {
-                const row = document.createElement("tr");
-                row.innerHTML = `
-                    <td>${commit.message}</td>
-                    <td>${commit.date}</td>
-                    <td>${commit.time}</td>
-                `;
-                commitTableBody.appendChild(row);
-            });
-        } catch (error) {
-            showNotification("Error", "Failed to fetch commits.");
-        }
-    }
-
-    // Call the fetchCommits function to populate the commit data
-    fetchCommits();
-
-    function showNotification(type, message, isError) {
+    function showNotification(title, message, isError) {
         const notification = document.getElementById("notification");
-        notification.classList.add(type);
-        notification.textContent = message;
+        notification.innerHTML = `<strong>${title}:</strong> ${message}`;
+        notification.className = isError ? "notification error" : "notification";
         notification.style.display = "block";
-
-        if (isError) {
-            notification.classList.add("error");
-        }
+        notification.style.opacity = "1";
 
         setTimeout(() => {
-            notification.style.display = "none";
-        }, 5000);
+            notification.style.opacity = "0";
+            setTimeout(() => {
+                notification.style.display = "none";
+            }, 500);
+        }, 3000);
     }
 </script>
 </body>
