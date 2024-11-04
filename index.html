@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sogz</title>
     <link rel="icon" href="api/logo.png" type="image/png"> <!-- Favicon -->
+
     <style>
+        /* Basic styling for the body */
         body {
             background-color: #121212; /* Dark background */
             color: #39FF14; /* Bright green/neon text */
@@ -19,10 +21,12 @@
             padding: 20px;
         }
 
+        /* Styling for headings */
         h1, h2 {
             margin-bottom: 20px;
         }
 
+        /* Form styling */
         form {
             background-color: #1e1e1e; /* Slightly lighter dark background for form */
             padding: 20px;
@@ -32,6 +36,7 @@
             text-align: center; /* Center text inside form */
         }
 
+        /* Textarea styling */
         textarea {
             width: 100%; /* Full width */
             height: 100px; /* Fixed height */
@@ -45,11 +50,13 @@
             font-family: inherit; /* Use same font as body */
         }
 
+        /* Label styling */
         label {
             display: block; /* Ensure labels are block elements */
             margin-bottom: 5px; /* Space below labels */
         }
 
+        /* Table styling */
         table {
             width: 80%; /* Table width */
             margin-top: 20px;
@@ -66,6 +73,7 @@
             background-color: #2e2e2e; /* Darker header background */
         }
 
+        /* Button styling */
         button {
             background-color: #39FF14; /* Bright button background */
             color: black; /* Button text color */
@@ -112,7 +120,7 @@
 
         .top-buttons button {
             background-color: #2e2e2e; /* Dark background for buttons */
-            color: # 39FF14; /* Bright text for buttons */
+            color: #39FF14; /* Bright text for buttons */
             border: none;
             padding: 10px;
             cursor: pointer;
@@ -151,16 +159,17 @@
     <button id="commit-button-fetch">Fetch Commits</button>
 </div>
 
-<script>
+<script type="module">
+    // Import functions from retrievePremium.js and retrieveCommit.js
+    import { getPremiumWebhook } from './retrievePremium.js';
+    import { retrieveCommits } from './retrieveCommits.js';
+
+    // Get elements
     const notificationElement = document.getElementById('notification');
     const commitForm = document.getElementById('commit-form');
     const commitTableBody = document.getElementById('commit-table-body');
     const premiumButton = document.getElementById('premium-button');
     const commitButtonFetch = document.getElementById('commit-button-fetch');
-
-    // Import functions from retrievePremium.js and retrieveCommit.js
-    const { getPremiumWebhook } = retrievePremium;
-    const { retrieveCommits } = retrieveCommit;
 
     // Add event listeners for buttons
     premiumButton.addEventListener('click', async () => {
@@ -179,11 +188,14 @@
             console.log('Commits:', commits);
             // Populate commit table with fetched commits
             commits.forEach((commit) => {
+                const date = new Date(commit.date);
+                const formattedDate = date.toLocaleDateString(); // e.g., "MM/DD/YYYY"
+                const formattedTime = date.toLocaleTimeString(); // e.g., "HH:MM:SS"
                 const tableRow = document.createElement('tr');
                 tableRow.innerHTML = `
                     <td>${commit.message}</td>
-                    <td>${commit.date}</td>
-                    <td>${commit.time}</td>
+                    <td>${formattedDate}</td>
+                    <td>${formattedTime}</td>
                 `;
                 commitTableBody.appendChild(tableRow);
             });
@@ -194,7 +206,7 @@
 
     // Function to display notifications
     function displayNotification(message, error, isError) {
-        notificationElement.textContent = `${message} ${error.message}`;
+        notificationElement.textContent = `${message} ${error?.message || 'Unknown error occurred.'}`;
         notificationElement.classList.add(isError ? 'error' : '');
         notificationElement.style.opacity = 1;
         setTimeout(() => {
