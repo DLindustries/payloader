@@ -27,7 +27,7 @@ export default async function handler(req, res) {
 
         res.status(200).json(recentCommits);
     } catch (error) {
-        console.error("Error fetching commits:", error);
-        res.status(500).json({ error: 'Failed to fetch commits', details: error.message });
+        console.error("Error fetching updates:", error);
+        res.status(500).json({ error: 'Failed to fetch updates', details: error.message });
     }
 }
