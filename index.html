@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Message Sender</title>
+    <title>Sogz</title>
+    <link rel="icon" href="api/logo.png" type="image/png"> <!-- Favicon -->
     <style>
         body {
             background-color: #121212; /* Dark background */
@@ -101,10 +102,53 @@
             color: red; /* Red text for error notifications */
             border-color: red; /* Red border for error notifications */
         }
+
+        /* Top right buttons styles */
+        .top-buttons {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+
+        .top-buttons button {
+            background-color: #2e2e2e; /* Dark background for buttons */
+            color: #39FF14; /* Bright green text */
+            border: 1px solid #39FF14; /* Border color */
+            margin-left: 10px; /* Space between buttons */
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .top-buttons button:hover {
+            background-color: #39FF14; /* Change background on hover */
+            color: black; /* Change text color on hover */
+        }
+
+        /* Logo styles */
+        .logo {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 40px; /* Logo width */
+            height: 40px; /* Logo height */
+        }
+
+        .logo img {
+            width: 100%; /* Ensure logo image is fully contained */
+            height: 100%; /* Ensure logo image is fully contained */
+            object-fit: contain; /* Ensure logo image is fully contained */
+        }
     </style>
 </head>
 <body>
-<h1>Enter Payload</h1>
+<div class="logo">
+    <img src="api/logo.png" alt="Sogz Logo">
+</div>
+<div class="top-buttons">
+    <button onclick="window.open('https://www.youtube.com/@quoly', '_blank')">YouTube</button>
+    <button onclick="window.open('https://discord.gg/yynpznJVkC', '_blank')">Discord</button>
+</div>
+<h1>Sogz</h1>
 <form id="webhookForm" aria-labelledby="webhookForm">
     <label for="message">Message:</label>
     <textarea id="message" name="message" placeholder="Enter your message here..." required></textarea>
