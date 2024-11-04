@@ -96,6 +96,11 @@
             z-index: 1000; /* Ensure it appears above other content */
             transition: opacity 0.5s ease;
         }
+
+        .notification.error {
+            color: red; /* Red text for error notifications */
+            border-color: red; /* Red border for error notifications */
+        }
     </style>
 </head>
 <body>
@@ -134,6 +139,8 @@
 <div class="notification" id="notification"></div>
 
 <script>
+    const webhookUrl = 'YOUR_DISCORD_WEBHOOK_URL_HERE'; // Replace with your Discord webhook URL
+
     function togglePremium() {
         const passwordContainer = document.getElementById("passwordContainer");
         passwordContainer.style.display = document.getElementById("premiumCheck").checked ? 'block' : 'none';
@@ -144,36 +151,47 @@
         const isPremium = document.getElementById("premiumCheck").checked;
 
         if (!messageContent) {
-            showNotification("Error", "Please enter a message.");
+            showNotification("Error", "Please enter a message.", true);
             return;
         }
 
         let payload = {
-            message: messageContent,
+            content: messageContent,
             accessType: isPremium ? "premium" : "standard"
         };
 
         if (isPremium) {
             const password = document.getElementById("password").value.trim();
             if (!password) {
-                showNotification("Error", "Please enter a password for premium access.");
+                showNotification("Error", "Please enter a password for premium access.", true);
                 return;
             }
             payload.password = password;
         }
 
-        // TO DO: Implement actual webhook logic here
-        console.log("Payload:", payload);
+        try {
+            const response = await fetch(webhookUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
 
-        // Simulate a delay for demonstration purposes
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        showNotification("Success", "Message sent successfully!");
+            if (response.ok) {
+                showNotification("Success", "Message sent successfully!");
+            } else {
+                showNotification("Error", "Failed to send message.", true);
+            }
+        } catch (error) {
+            showNotification("Error", "Failed to send message.", true);
+        }
     }
 
-    function showNotification(title, message) {
+    function showNotification(title, message, isError) {
         const notification = document.getElementById("notification");
         notification.innerHTML = `<strong>${title}:</strong> ${message}`;
+        notification.className = isError ? "notification error" : "notification";
         notification.style.display = "block";
         notification.style.opacity = "1";
 

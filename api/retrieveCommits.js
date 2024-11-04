@@ -14,13 +14,13 @@ export default async function handler(req, res) {
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error("GitHub API error:", errorText);
-            return res.status(response.status).json({ error: `GitHub API error: ${response.statusText}`, details: errorText });
+            console.error("API error:", errorText);
+            return res.status(response.status).json({ error: `API error: ${response.statusText}`, details: errorText });
         }
 
         // Get the commit data and limit to 10 commits
         const commits = await response.json();
-        const recentCommits = commits.slice(0, 10).map(commit => ({
+        const recentCommits = commits.slice(0, 20).map(commit => ({
             message: commit.commit.message,
             date: commit.commit.committer.date
         }));
