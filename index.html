@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discord Webhook Message Sender</title>
+    <title>Message Sender</title>
 </head>
 <body>
-<h1>Send a Message to Discord</h1>
+<h1>Enter payload</h1>
 <form id="webhookForm">
     <label for="message">Message:</label><br>
     <textarea id="message" name="message" rows="4" cols="50"></textarea><br><br>
@@ -23,9 +23,9 @@
 </form>
 
 <script>
-    async function togglePremium() {
+    function togglePremium() {
         const passwordContainer = document.getElementById("passwordContainer");
-        passwordContainer.style.display = document.getElementById("premiumCheck").checked ? "block" : "none";
+        passwordContainer.style.display = document.getElementById("premiumCheck").checked ? 'block' : 'none';
     }
 
     async function sendMessage() {
@@ -37,10 +37,9 @@
             return;
         }
 
-        let accessType = isPremium ? 'premium' : 'commoner';
         let payload = {
             message: messageContent,
-            accessType: accessType
+            accessType: isPremium ? 'premium' : 'commoner'
         };
 
         if (isPremium) {
@@ -49,7 +48,8 @@
         }
 
         try {
-            const response = await fetch('/api/retrievepremium', {
+            console.log("Sending payload:", JSON.stringify(payload));
+            const response = await fetch('https://payloader.vercel.app/api/retrievepremium', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -57,17 +57,47 @@
                 body: JSON.stringify(payload)
             });
 
+            const data = await response.json();
+            console.log("Received data:", data);
+
             if (response.ok) {
-                const data = await response.json();
-                alert("Webhook URL: " + (isPremium ? data.webhook : data.webhook));
+                const webhookUrl = data.webhook;
+
+                if (!webhookUrl) {
+                    alert("No webhook URL returned.");
+                    return;
+                }
+
+                const messagePayload = {
+                    content: messageContent
+                };
+
+                const webhookResponse = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(messagePayload)
+                });
+
+                if (webhookResponse.ok) {
+                    alert("Message sent successfully!");
+                } else {
+                    const errorMessage = await webhookResponse.text();
+                    console.error("Webhook response error:", errorMessage);
+                    alert("Failed to send message: " + webhookResponse.statusText + " - " + errorMessage);
+                }
             } else {
-                alert("Failed to retrieve webhook: " + response.statusText);
+                const errorResponse = await response.text();
+                console.error("API response error:", errorResponse);
+                alert("Failed to retrieve webhook: " + response.statusText + " - " + errorResponse);
             }
         } catch (error) {
             console.error("Error sending message:", error);
-            alert("An error occurred while sending the message.");
+            alert("An error occurred while sending the message: " + error.message);
         }
     }
 </script>
+
 </body>
 </html>
