@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sogz</title>
+    <link rel="icon" href="api/logo.png" type="image/png"> <!-- Favicon -->
     <style>
         body {
             background-color: #121212; /* Dark background */
@@ -111,56 +112,28 @@
 
         .top-buttons button {
             background-color: #2e2e2e; /* Dark background for buttons */
-            color: #39FF14; /* Bright green text */
-            border: 1px solid #39FF14; /* Border color */
-            margin-left: 10px; /* Space between buttons */
+            color: # 39FF14; /* Bright text for buttons */
+            border: none;
             padding: 10px;
+            cursor: pointer;
             border-radius: 5px;
+            font-weight: bold;
+            transition: opacity 0.3s; /* Smooth transition for hover effect */
         }
 
         .top-buttons button:hover {
-            background-color: #39FF14; /* Change background on hover */
-            color: black; /* Change text color on hover */
-        }
-
-        /* Logo styles */
-        .logo {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            width: 40px; /* Logo width */
-            height: 40px; /* Logo height */
+            opacity: 0.8; /* Hover effect */
         }
     </style>
 </head>
 <body>
-<div class="logo">
-    <img src="api/logo.png" alt="Sogz Logo">
-</div>
-<div class="top-buttons">
-    <button onclick="window.open('https://www.youtube.com/@quoly', '_blank')">YouTube</button>
-    <button onclick="window.open('https://discord.gg/yynpznJVkC', '_blank')">Discord</button>
-</div>
 <h1>Sogz</h1>
-<form id="webhookForm" aria-labelledby="webhookForm">
-    <label for="message">Message:</label>
-    <textarea id="message" name="message" placeholder="Enter your message here..." required></textarea>
-
-    <label>
-        <input type="checkbox" id="premiumCheck" onclick="togglePremium()"> Use Premium Webhook
-    </label>
-
-    <div id="passwordContainer" style="display:none;">
-        <label for="password">Password:</label>
-        <input type="password" id="password" aria-describedby="passwordHelp" placeholder="Enter password if using premium">
-        <small id="passwordHelp" style="color: #aaa;">Required for premium webhook access.</small>
-    </div>
-
-    <button type="button" onclick="sendMessage()">Send Message</button>
+<form id="commit-form">
+    <label for="commit-message">Commit Message:</label>
+    <textarea id="commit-message" name="commit-message"></textarea>
+    <button id="commit-button">Commit</button>
 </form>
-
-<h2>Recent Commits</h2>
-<table id="commitTable">
+<table id="commit-table">
     <thead>
     <tr>
         <th>Message</th>
@@ -168,76 +141,65 @@
         <th>Time</th>
     </tr>
     </thead>
-    <tbody>
+    <tbody id="commit-table-body">
     <!-- Commit data will be populated here -->
     </tbody>
 </table>
-
 <div class="notification" id="notification"></div>
+<div class="top-buttons">
+    <button id="premium-button">Get Premium Webhook</button>
+    <button id="commit-button-fetch">Fetch Commits</button>
+</div>
 
 <script>
-    const webhookUrl = 'YOUR_DISCORD_WEBHOOK_URL_HERE'; // Replace with your Discord webhook URL
+    const notificationElement = document.getElementById('notification');
+    const commitForm = document.getElementById('commit-form');
+    const commitTableBody = document.getElementById('commit-table-body');
+    const premiumButton = document.getElementById('premium-button');
+    const commitButtonFetch = document.getElementById('commit-button-fetch');
 
-    function togglePremium() {
-        const passwordContainer = document.getElementById("passwordContainer");
-        passwordContainer.style.display = document.getElementById("premiumCheck").checked ? 'block' : 'none';
-    }
+    // Import functions from retrievePremium.js and retrieveCommit.js
+    const { getPremiumWebhook } = retrievePremium;
+    const { retrieveCommits } = retrieveCommit;
 
-    async function sendMessage() {
-        const messageContent = document.getElementById("message").value.trim();
-        const isPremium = document.getElementById("premiumCheck").checked;
-
-        if (!messageContent) {
-            showNotification("Error", "Please enter a message.", true);
-            return;
-        }
-
-        let payload = {
-            content: messageContent,
-            accessType: isPremium ? "premium" : "standard"
-        };
-
-        if (isPremium) {
-            const password = document.getElementById("password").value.trim();
-            if (!password) {
-                showNotification("Error", "Please enter a password for premium access.", true);
-                return;
-            }
-            payload.password = password;
-        }
-
+    // Add event listeners for buttons
+    premiumButton.addEventListener('click', async () => {
         try {
-            const response = await fetch(webhookUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
-
-            if (response.ok) {
-                showNotification("Success", "Message sent successfully!");
-            } else {
-                showNotification("Error", "Failed to send message.", true);
-            }
+            const webhookUrl = await getPremiumWebhook();
+            console.log(`Premium webhook URL: ${webhookUrl}`);
+            // Handle webhook URL here
         } catch (error) {
-            showNotification("Error", "Failed to send message.", true);
+            displayNotification('Error fetching premium webhook:', error, true);
         }
-    }
+    });
 
-    function showNotification(title, message, isError) {
-        const notification = document.getElementById("notification");
-        notification.innerHTML = `<strong>${title}:</strong> ${message}`;
-        notification.className = isError ? "notification error" : "notification";
-        notification.style.display = "block";
-        notification.style.opacity = "1";
+    commitButtonFetch.addEventListener('click', async () => {
+        try {
+            const commits = await retrieveCommits();
+            console.log('Commits:', commits);
+            // Populate commit table with fetched commits
+            commits.forEach((commit) => {
+                const tableRow = document.createElement('tr');
+                tableRow.innerHTML = `
+                    <td>${commit.message}</td>
+                    <td>${commit.date}</td>
+                    <td>${commit.time}</td>
+                `;
+                commitTableBody.appendChild(tableRow);
+            });
+        } catch (error) {
+            displayNotification('Error fetching commits:', error, true);
+        }
+    });
 
+    // Function to display notifications
+    function displayNotification(message, error, isError) {
+        notificationElement.textContent = `${message} ${error.message}`;
+        notificationElement.classList.add(isError ? 'error' : '');
+        notificationElement.style.opacity = 1;
         setTimeout(() => {
-            notification.style.opacity = "0";
-            setTimeout(() => {
-                notification.style.display = "none";
-            }, 500);
-        }, 3000);
+            notificationElement.style.opacity = 0;
+        }, 5000);
     }
 </script>
 </body>
