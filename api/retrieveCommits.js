@@ -20,7 +20,7 @@ export default async function handler(req, res) {
 
         // Get the commit data and limit to 10 commits
         const commits = await response.json();
-        const recentCommits = commits.slice(0, 20).map(commit => ({
+        const recentCommits = commits.slice(0, 10).map(commit => ({
             message: commit.commit.message,
             date: commit.commit.committer.date
         }));
