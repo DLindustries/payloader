@@ -3,11 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sogz</title>
-    <link rel="icon" href="api/logo.png" type="image/png"> <!-- Favicon -->
-
+    <title>Message Sender</title>
     <style>
-        /* Basic styling for the body */
         body {
             background-color: #121212; /* Dark background */
             color: #39FF14; /* Bright green/neon text */
@@ -21,12 +18,10 @@
             padding: 20px;
         }
 
-        /* Styling for headings */
         h1, h2 {
             margin-bottom: 20px;
         }
 
-        /* Form styling */
         form {
             background-color: #1e1e1e; /* Slightly lighter dark background for form */
             padding: 20px;
@@ -36,7 +31,6 @@
             text-align: center; /* Center text inside form */
         }
 
-        /* Textarea styling */
         textarea {
             width: 100%; /* Full width */
             height: 100px; /* Fixed height */
@@ -50,13 +44,11 @@
             font-family: inherit; /* Use same font as body */
         }
 
-        /* Label styling */
         label {
             display: block; /* Ensure labels are block elements */
             margin-bottom: 5px; /* Space below labels */
         }
 
-        /* Table styling */
         table {
             width: 80%; /* Table width */
             margin-top: 20px;
@@ -73,7 +65,6 @@
             background-color: #2e2e2e; /* Darker header background */
         }
 
-        /* Button styling */
         button {
             background-color: #39FF14; /* Bright button background */
             color: black; /* Button text color */
@@ -89,59 +80,29 @@
         button:hover {
             opacity: 0.8; /* Hover effect */
         }
-
-        /* Notification styles */
-        .notification {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background-color: #1e1e1e;
-            color: #39FF14;
-            border: 1px solid #39FF14;
-            border-radius: 5px;
-            padding: 15px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-            display: none; /* Hidden by default */
-            z-index: 1000; /* Ensure it appears above other content */
-            transition: opacity 0.5s ease;
-        }
-
-        .notification.error {
-            color: red; /* Red text for error notifications */
-            border-color: red; /* Red border for error notifications */
-        }
-
-        /* Top right buttons styles */
-        .top-buttons {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-        }
-
-        .top-buttons button {
-            background-color: #2e2e2e; /* Dark background for buttons */
-            color: #39FF14; /* Bright text for buttons */
-            border: none;
-            padding: 10px;
-            cursor: pointer;
-            border-radius: 5px;
-            font-weight: bold;
-            transition: opacity 0.3s; /* Smooth transition for hover effect */
-        }
-
-        .top-buttons button:hover {
-            opacity: 0.8; /* Hover effect */
-        }
     </style>
 </head>
 <body>
-<h1>Sogz</h1>
-<form id="commit-form">
-    <label for="commit-message">Commit Message:</label>
-    <textarea id="commit-message" name="commit-message"></textarea>
-    <button id="commit-button">Commit</button>
+<h1>Enter Payload</h1>
+<form id="webhookForm" aria-labelledby="webhookForm">
+    <label for="message">Message:</label>
+    <textarea id="message" name="message" placeholder="Enter your message here..." required></textarea>
+
+    <label>
+        <input type="checkbox" id="premiumCheck" onclick="togglePremium()"> Use Premium Webhook
+    </label>
+
+    <div id="passwordContainer" style="display:none;">
+        <label for="password">Password:</label>
+        <input type="password" id="password" aria-describedby="passwordHelp" placeholder="Enter password if using premium">
+        <small id="passwordHelp" style="color: #aaa;">Required for premium webhook access.</small>
+    </div>
+
+    <button type="button" onclick="sendMessage()">Send Message</button>
 </form>
-<table id="commit-table">
+
+<h2>Recent Commits</h2>
+<table id="commitTable">
     <thead>
     <tr>
         <th>Message</th>
@@ -149,69 +110,59 @@
         <th>Time</th>
     </tr>
     </thead>
-    <tbody id="commit-table-body">
+    <tbody>
     <!-- Commit data will be populated here -->
     </tbody>
 </table>
-<div class="notification" id="notification"></div>
-<div class="top-buttons">
-    <button id="premium-button">Get Premium Webhook</button>
-    <button id="commit-button-fetch">Fetch Commits</button>
-</div>
 
-<script type="module">
-    // Import functions from retrievePremium.js and retrieveCommit.js
-    import { getPremiumWebhook } from './retrievePremium.js';
-    import { retrieveCommits } from './retrieveCommits.js';
+<script>
+    function togglePremium() {
+        const passwordContainer = document.getElementById("passwordContainer");
+        passwordContainer.style.display = document.getElementById("premiumCheck").checked ? 'block' : 'none';
+    }
 
-    // Get elements
-    const notificationElement = document.getElementById('notification');
-    const commitForm = document.getElementById('commit-form');
-    const commitTableBody = document.getElementById('commit-table-body');
-    const premiumButton = document.getElementById('premium-button');
-    const commitButtonFetch = document.getElementById('commit-button-fetch');
+    async function sendMessage() {
+        const messageContent = document.getElementById("message").value.trim();
+        const isPremium = document.getElementById ("premiumCheck").checked;
 
-    // Add event listeners for buttons
-    premiumButton.addEventListener('click', async () => {
-        try {
-            const webhookUrl = await getPremiumWebhook();
-            console.log(`Premium webhook URL: ${webhookUrl}`);
-            // Handle webhook URL here
-        } catch (error) {
-            displayNotification('Error fetching premium webhook:', error, true);
+        if (!messageContent) {
+            showNotification("Error", "Please enter a message.");
+            return;
         }
-    });
 
-    commitButtonFetch.addEventListener('click', async () => {
-        try {
-            const commits = await retrieveCommits();
-            console.log('Commits:', commits);
-            // Populate commit table with fetched commits
-            commits.forEach((commit) => {
-                const date = new Date(commit.date);
-                const formattedDate = date.toLocaleDateString(); // e.g., "MM/DD/YYYY"
-                const formattedTime = date.toLocaleTimeString(); // e.g., "HH:MM:SS"
-                const tableRow = document.createElement('tr');
-                tableRow.innerHTML = `
-                    <td>${commit.message}</td>
-                    <td>${formattedDate}</td>
-                    <td>${formattedTime}</td>
-                `;
-                commitTableBody.appendChild(tableRow);
+        let payload = {
+            message: messageContent,
+            accessType: isPremium ? "premium" : "standard"
+        };
+
+        if (isPremium) {
+            const password = document.getElementById("password").value.trim();
+            if (!password) {
+                showNotification("Error", "Please enter a password for premium access.");
+                return;
+            }
+            payload.password = password;
+        }
+
+        // TO DO: Implement actual webhook logic here
+        console.log("Payload:", payload);
+
+        // Simulate a delay for demonstration purposes
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        showNotification("Success", "Message sent successfully!");
+    }
+
+    function showNotification(title, message) {
+        if (Notification.permission === "granted") {
+            new Notification(title, { body: message });
+        } else {
+            Notification.requestPermission().then(permission => {
+                if (permission === "granted") {
+                    new Notification(title, { body: message });
+                }
             });
-        } catch (error) {
-            displayNotification('Error fetching commits:', error, true);
         }
-    });
-
-    // Function to display notifications
-    function displayNotification(message, error, isError) {
-        notificationElement.textContent = `${message} ${error?.message || 'Unknown error occurred.'}`;
-        notificationElement.classList.add(isError ? 'error' : '');
-        notificationElement.style.opacity = 1;
-        setTimeout(() => {
-            notificationElement.style.opacity = 0;
-        }, 5000);
     }
 </script>
 </body>
