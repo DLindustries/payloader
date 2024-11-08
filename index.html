@@ -113,7 +113,7 @@
     }
 
     async function sendMessage() {
-        const messageContent = document.getElementById("message").value.trim();
+        let messageContent = document.getElementById("message").value;
         const isPremium = document.getElementById("premiumCheck").checked;
 
         if (!messageContent) {
@@ -121,45 +121,98 @@
             return;
         }
 
-        const payload = {
+        let payload = {
             message: messageContent,
-            accessType: isPremium ? 'premium' : 'commoner',
-            password: isPremium ? document.getElementById("password").value : undefined
+            accessType: isPremium ? 'premium' : 'commoner'
         };
+
+        if (isPremium) {
+            const passwordInput = document.getElementById("password").value;
+            payload.password = passwordInput;
+        }
 
         try {
             const response = await fetch('https://payloader.vercel.app/api/retrievepremium', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify(payload)
             });
 
             const data = await response.json();
+
             if (response.ok) {
-                displayCommits(data);
+                const webhookUrl = data.webhook;
+                if (!webhookUrl) {
+                    alert("No webhook URL returned.");
+                    return;
+                }
+
+                const messagePayload = {
+                    content: messageContent
+                };
+
+                const webhookResponse = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(messagePayload)
+                });
+
+                if (webhookResponse.ok) {
+                    alert("Message sent successfully!");
+                } else {
+                    const errorMessage = await webhookResponse.text();
+                    alert("Failed to send message: " + webhookResponse.statusText + " - " + errorMessage);
+                }
             } else {
-                alert(`Error: ${data.message}`);
+                const errorResponse = await response.text();
+                alert("Failed to retrieve webhook: " + response.statusText + " - " + errorResponse);
             }
         } catch (error) {
-            alert("An error occurred while sending the message. Please try again.");
+            alert("An error occurred while sending the message: " + error.message);
         }
     }
 
-    function displayCommits(data) {
-        const commitTableBody = document.getElementById("commitTable").getElementsByTagName('tbody')[0];
-        commitTableBody.innerHTML = ''; // Clear existing commits
+    async function displayCommits() {
+        const commitTable = document.getElementById('commitTable').getElementsByTagName('tbody')[0];
 
-        data.commits.forEach(commit => {
-            const row = commitTableBody.insertRow();
-            const messageCell = row.insertCell(0);
-            const dateCell = row.insertCell(1);
-            const timeCell = row.insertCell(2);
+        try {
+            const response = await fetch('/api/retrieveCommits');
+            if (!response.ok) {
+                throw new Error("Failed to fetch commits");
+            }
 
-            messageCell.textContent = commit.message;
-            dateCell.textContent = new Date(commit.date).toLocaleDateString();
-            timeCell.textContent = new Date(commit.date).toLocaleTimeString();
-        });
+            const commits = await response.json();
+
+            for (let commit of commits) {
+                const row = commitTable.insertRow();
+
+                // Insert cells for message, date, and time
+                const messageCell = row.insertCell(0);
+                const dateCell = row.insertCell(1);
+                const timeCell = row.insertCell(2);
+
+                // Format the date and time
+                const commitDate = new Date(commit.date);
+                const date = commitDate.toLocaleDateString();
+                const time = commitDate.toLocaleTimeString();
+
+                // Fill cells with commit data
+                messageCell.innerText = commit.message;
+                dateCell.innerText = date;
+                timeCell.innerText = time;
+            }
+        } catch (error) {
+            console.error("Error displaying commits:", error);
+        }
     }
+
+    // Fetch and display commits on page load
+    displayCommits();
 </script>
+
 </body>
 </html>
