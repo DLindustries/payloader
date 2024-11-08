@@ -6,9 +6,9 @@
     <title>Message Sender</title>
     <style>
         body {
-            background-color: #121212; /* Dark background */
-            color: #39FF14; /* Bright green/neon text */
-            font-family: 'Courier New', Courier, monospace; /* Monospace font for hacker vibe */
+            background-color: #121212;
+            color: #39FF14;
+            font-family: 'Courier New', Courier, monospace;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -22,51 +22,51 @@
         }
 
         form {
-            background-color: #1e1e1e; /* Slightly lighter dark background for form */
+            background-color: #1e1e1e;
             padding: 20px;
             border-radius: 5px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-            width: 300px; /* Fixed width for form */
-            text-align: center; /* Center text inside form */
+            width: 300px;
+            text-align: center;
         }
 
         textarea {
-            width: 100%; /* Full width */
-            height: 100px; /* Fixed height */
-            resize: none; /* Disable resizing */
-            margin-bottom: 10px; /* Space below textarea */
-            background-color: #2e2e2e; /* Darker background for textarea */
-            color: #39FF14; /* Text color */
-            border: 1px solid #39FF14; /* Border color */
-            border-radius: 3px; /* Rounded corners */
-            padding: 5px; /* Padding inside textarea */
-            font-family: inherit; /* Use same font as body */
+            width: 100%;
+            height: 100px;
+            resize: none;
+            margin-bottom: 10px;
+            background-color: #2e2e2e;
+            color: #39FF14;
+            border: 1px solid #39FF14;
+            border-radius: 3px;
+            padding: 5px;
+            font-family: inherit;
         }
 
         input[type="file"] {
-            margin: 10px 0; /* Space above and below file input */
-            color: #39FF14; /* Text color for file input */
+            margin: 10px 0;
+            color: #39FF14;
         }
 
         table {
-            width: 80%; /* Table width */
+            width: 80%;
             margin-top: 20px;
             border-collapse: collapse;
         }
 
         th, td {
-            border: 1px solid #39FF14; /* Border color */
+            border: 1px solid #39FF14;
             padding: 8px;
             text-align: left;
         }
 
         th {
-            background-color: #2e2e2e; /* Darker header background */
+            background-color: #2e2e2e;
         }
 
         button {
-            background-color: #39FF14; /* Bright button background */
-            color: black; /* Button text color */
+            background-color: #39FF14;
+            color: black;
             border: none;
             padding: 10px;
             cursor: pointer;
@@ -76,7 +76,12 @@
         }
 
         button:hover {
-            opacity: 0.8; /* Hover effect */
+            background-color: #32CD32;
+            opacity: 0.9;
+        }
+
+        .hidden {
+            display: none;
         }
     </style>
 </head>
@@ -90,18 +95,18 @@
     <input type="file" id="fileInput" name="fileInput" accept="*/*"><br>
 
     <label>
-        <input type="checkbox" id="premiumCheck" onclick="togglePremium()"> Use Premium Webhook
+        <input type="checkbox" id="premiumCheck" aria-label="Enable Premium Webhook"> Use Premium Webhook
     </label><br>
-    <div id="passwordContainer" style="display:none;">
+    <div id="passwordContainer" class="hidden">
         <label for="password">Password:</label>
         <input type="password" id="password"><br>
     </div><br>
 
-    <button type="button" onclick="sendMessage()">Send Message</button>
+    <button type="button">Send Message</button>
 </form>
 
 <h2>Recent Commits</h2>
-<table id="commitTable" border="1">
+<table id="commitTable">
     <thead>
     <tr>
         <th>Message</th>
@@ -110,19 +115,39 @@
     </tr>
     </thead>
     <tbody>
-    <!-- Commit data will be populated here -->
     </tbody>
 </table>
 
 <script>
+    document.getElementById("premiumCheck").addEventListener("click", togglePremium);
+    document.getElementById("fileInput").addEventListener("change", validateFileSize);
+    document.getElementById("webhookForm").querySelector("button").addEventListener("click", sendMessage);
+
     function togglePremium() {
         const passwordContainer = document.getElementById("passwordContainer");
-        passwordContainer.style.display = document.getElementById("premiumCheck").checked ? 'block' : 'none';
+        passwordContainer.classList.toggle('hidden', !document.getElementById("premiumCheck").checked);
+    }
+
+    function validateFileSize() {
+        const fileInput = document.getElementById("fileInput");
+        const file = fileInput.files[0];
+        if (file) {
+            if (file.size > 8 * 1024 * 1024) {
+                alert("File size exceeds 8MB. Please select a smaller file.");
+                fileInput.value = "";
+                return;
+            }
+            const validTypes = ["image/jpeg", "image/png", "application/pdf"];
+            if (!validTypes.includes(file.type)) {
+                alert("Invalid file type. Please upload a JPG, PNG, or PDF.");
+                fileInput.value = "";
+            }
+        }
     }
 
     async function sendMessage() {
         let messageContent = document.getElementById("message").value;
-        const isPremium = document.getElementBy "premiumCheck").checked;
+        const isPremium = document.getElementById("premiumCheck").checked;
         const fileInput = document.getElementById("fileInput").files[0];
 
         if (!messageContent) {
@@ -158,41 +183,22 @@
                     return;
                 }
 
-                const messagePayload = {
-                    content: messageContent
-                };
-
+                const formData = new FormData();
+                formData.append('message', messageContent);
                 if (fileInput) {
-                    const formData = new FormData();
                     formData.append('file', fileInput);
-                    formData.append('message', messageContent);
+                }
 
-                    const fileResponse = await fetch(webhookUrl, {
-                        method: 'POST',
-                        body: formData
-                    });
+                const webhookResponse = await fetch(webhookUrl, {
+                    method: 'POST',
+                    body: formData
+                });
 
-                    if (fileResponse.ok) {
-                        alert("File and message sent successfully!");
-                    } else {
-                        const errorMessage = await fileResponse.text();
-                        alert("Failed to send file: " + fileResponse.statusText + " - " + errorMessage);
-                    }
+                if (webhookResponse.ok) {
+                    alert("Message and file sent successfully!");
                 } else {
-                    const webhookResponse = await fetch(webhookUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(messagePayload)
-                    });
-
-                    if (webhookResponse.ok) {
-                        alert("Message sent successfully!");
-                    } else {
-                        const errorMessage = await webhookResponse.text();
-                        alert("Failed to send message: " + webhookResponse.statusText + " - " + errorMessage);
-                    }
+                    const errorMessage = await webhookResponse.text();
+                    alert("Failed to send: " + webhookResponse.statusText + " - " + errorMessage);
                 }
             } else {
                 const errorResponse = await response.text();
@@ -205,6 +211,7 @@
 
     async function displayCommits() {
         const commitTable = document.getElementById('commitTable').getElementsByTagName('tbody')[0];
+        commitTable.innerHTML = ""; // Clears table before adding new rows
 
         try {
             const response = await fetch('/api/retrieveCommits');
@@ -216,30 +223,21 @@
 
             for (let commit of commits) {
                 const row = commitTable.insertRow();
-
-                // Insert cells for message, date, and time
                 const messageCell = row.insertCell(0);
                 const dateCell = row.insertCell(1);
                 const timeCell = row.insertCell(2);
 
-                // Format the date and time
                 const commitDate = new Date(commit.date);
-                const date = commitDate.toLocaleDateString();
-                const time = commitDate.toLocaleTimeString();
-
-                // Fill cells with commit data
                 messageCell.innerText = commit.message;
-                dateCell.innerText = date;
-                timeCell.innerText = time;
+                dateCell.innerText = commitDate.toLocaleDateString();
+                timeCell.innerText = commitDate.toLocaleTimeString();
             }
         } catch (error) {
             console.error("Error displaying commits:", error);
         }
     }
 
-    // Fetch and display commits on page load
     displayCommits();
 </script>
-
 </body>
 </html>
