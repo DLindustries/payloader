@@ -43,6 +43,11 @@
             font-family: inherit; /* Use same font as body */
         }
 
+        input[type="file"] {
+            margin: 10px 0; /* Space above and below file input */
+            color: #39FF14; /* Text color for file input */
+        }
+
         table {
             width: 80%; /* Table width */
             margin-top: 20px;
@@ -81,6 +86,9 @@
     <label for="message">Message:</label><br>
     <textarea id="message" name="message" rows="4" cols="50" placeholder="Enter your message here..."></textarea><br>
 
+    <label for="fileInput">Upload File (max 8MB):</label><br>
+    <input type="file" id="fileInput" name="fileInput" accept="*/*"><br>
+
     <label>
         <input type="checkbox" id="premiumCheck" onclick="togglePremium()"> Use Premium Webhook
     </label><br>
@@ -114,7 +122,8 @@
 
     async function sendMessage() {
         let messageContent = document.getElementById("message").value;
-        const isPremium = document.getElementById("premiumCheck").checked;
+        const isPremium = document.getElementBy "premiumCheck").checked;
+        const fileInput = document.getElementById("fileInput").files[0];
 
         if (!messageContent) {
             alert("Please enter a message.");
@@ -153,19 +162,37 @@
                     content: messageContent
                 };
 
-                const webhookResponse = await fetch(webhookUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(messagePayload)
-                });
+                if (fileInput) {
+                    const formData = new FormData();
+                    formData.append('file', fileInput);
+                    formData.append('message', messageContent);
 
-                if (webhookResponse.ok) {
-                    alert("Message sent successfully!");
+                    const fileResponse = await fetch(webhookUrl, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (fileResponse.ok) {
+                        alert("File and message sent successfully!");
+                    } else {
+                        const errorMessage = await fileResponse.text();
+                        alert("Failed to send file: " + fileResponse.statusText + " - " + errorMessage);
+                    }
                 } else {
-                    const errorMessage = await webhookResponse.text();
-                    alert("Failed to send message: " + webhookResponse.statusText + " - " + errorMessage);
+                    const webhookResponse = await fetch(webhookUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(messagePayload)
+                    });
+
+                    if (webhookResponse.ok) {
+                        alert("Message sent successfully!");
+                    } else {
+                        const errorMessage = await webhookResponse.text();
+                        alert("Failed to send message: " + webhookResponse.statusText + " - " + errorMessage);
+                    }
                 }
             } else {
                 const errorResponse = await response.text();
