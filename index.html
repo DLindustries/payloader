@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Message Sender</title>
+    <title>Commit Logs and Suggestions</title>
     <style>
         body {
             background-color: #121212;
@@ -19,6 +19,22 @@
 
         h1, h2 {
             margin-bottom: 20px;
+        }
+
+        table {
+            width: 80%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #39FF14;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #2e2e2e;
         }
 
         form {
@@ -43,27 +59,6 @@
             font-family: inherit;
         }
 
-        input[type="file"] {
-            margin: 10px 0;
-            color: #39FF14;
-        }
-
-        table {
-            width: 80%;
-            margin-top: 20px;
-            border-collapse: collapse;
-        }
-
-        th, td {
-            border: 1px solid #39FF14;
-            padding: 8px;
-            text-align: left;
-        }
-
-        th {
-            background-color: #2e2e2e;
-        }
-
         button {
             background-color: #39FF14;
             color: black;
@@ -79,30 +74,15 @@
             background-color: #32CD32;
             opacity: 0.9;
         }
-
-        .hidden {
-            display: none;
-        }
     </style>
 </head>
 <body>
-<h1>Enter Payload</h1>
-<form id="webhookForm">
-    <label for="message">Message:</label><br>
-    <textarea id="message" name="message" rows="4" cols="50" placeholder="Enter your message here..."></textarea><br>
+<h1>Commit Logs and Suggestions</h1>
 
-    <label for="fileInput">Upload File (max 8MB):</label><br>
-    <input type="file" id="fileInput" name="fileInput" accept="*/*"><br>
-
-    <label>
-        <input type="checkbox" id="premiumCheck" aria-label="Enable Premium Webhook"> Use Premium Webhook
-    </label><br>
-    <div id="passwordContainer" class="hidden">
-        <label for="password">Password:</label>
-        <input type="password" id="password"><br>
-    </div><br>
-
-    <button type="button">Send Message</button>
+<form id="suggestionForm">
+    <label for="suggestionMessage">New Suggestion:</label><br>
+    <textarea id="suggestionMessage" name="suggestionMessage" rows="4" cols="50" placeholder="Enter your suggestion here..."></textarea><br>
+    <button type="button" onclick="sendSuggestion()">Send Suggestion</button>
 </form>
 
 <h2>Recent Commits</h2>
@@ -119,96 +99,6 @@
 </table>
 
 <script>
-    document.getElementById("premiumCheck").addEventListener("click", togglePremium);
-    document.getElementById("fileInput").addEventListener("change", validateFileSize);
-    document.getElementById("webhookForm").querySelector("button").addEventListener("click", sendMessage);
-
-    function togglePremium() {
-        const passwordContainer = document.getElementById("passwordContainer");
-        passwordContainer.classList.toggle('hidden', !document.getElementById("premiumCheck").checked);
-    }
-
-    function validateFileSize() {
-        const fileInput = document.getElementById("fileInput");
-        const file = fileInput.files[0];
-        if (file) {
-            if (file.size > 8 * 1024 * 1024) {
-                alert("File size exceeds 8MB. Please select a smaller file.");
-                fileInput.value = "";
-                return;
-            }
-            const validTypes = ["image/jpeg", "image/png", "application/pdf"];
-            if (!validTypes.includes(file.type)) {
-                alert("Invalid file type. Please upload a JPG, PNG, or PDF.");
-                fileInput.value = "";
-            }
-        }
-    }
-
-    async function sendMessage() {
-        let messageContent = document.getElementById("message").value;
-        const isPremium = document.getElementById("premiumCheck").checked;
-        const fileInput = document.getElementById("fileInput").files[0];
-
-        if (!messageContent) {
-            alert("Please enter a message.");
-            return;
-        }
-
-        let payload = {
-            message: messageContent,
-            accessType: isPremium ? 'premium' : 'commoner'
-        };
-
-        if (isPremium) {
-            const passwordInput = document.getElementById("password").value;
-            payload.password = passwordInput;
-        }
-
-        try {
-            const response = await fetch('https://payloader.vercel.app/api/retrievepremium', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                const webhookUrl = data.webhook;
-                if (!webhookUrl) {
-                    alert("No webhook URL returned.");
-                    return;
-                }
-
-                const formData = new FormData();
-                formData.append('message', messageContent);
-                if (fileInput) {
-                    formData.append('file', fileInput);
-                }
-
-                const webhookResponse = await fetch(webhookUrl, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (webhookResponse.ok) {
-                    alert("Message and file sent successfully!");
-                } else {
-                    const errorMessage = await webhookResponse.text();
-                    alert("Failed to send: " + webhookResponse.statusText + " - " + errorMessage);
-                }
-            } else {
-                const errorResponse = await response.text();
-                alert("Failed to retrieve webhook: " + response.statusText + " - " + errorResponse);
-            }
-        } catch (error) {
-            alert("An error occurred while sending the message: " + error.message);
-        }
-    }
-
     async function displayCommits() {
         const commitTable = document.getElementById('commitTable').getElementsByTagName('tbody')[0];
         commitTable.innerHTML = ""; // Clears table before adding new rows
@@ -234,6 +124,38 @@
             }
         } catch (error) {
             console.error("Error displaying commits:", error);
+        }
+    }
+
+    async function sendSuggestion() {
+        const suggestionMessage = document.getElementById('suggestionMessage').value.trim();
+        if (!suggestionMessage) {
+            alert("Please enter a suggestion.");
+            return;
+        }
+
+        const payload = {
+            message: suggestionMessage
+        };
+
+        try {
+            const response = await fetch('/api/sendMessage', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                alert("Suggestion sent successfully!");
+                document.getElementById('suggestionMessage').value = ''; // Clear the textarea
+            } else {
+                const errorMessage = await response.text();
+                alert("Failed to send suggestion: " + response.statusText + " - " + errorMessage);
+            }
+        } catch (error) {
+            alert("An error occurred while sending the suggestion: " + error.message);
         }
     }
 

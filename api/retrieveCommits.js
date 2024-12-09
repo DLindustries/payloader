@@ -2,7 +2,7 @@
 
 export default async function handler(req, res) {
     const repoOwner = 'DLindustries';
-    const repoName = 'payloader';
+    const repoName = 'alphalearner';
 
     try {
         // Fetch commits from GitHub API
