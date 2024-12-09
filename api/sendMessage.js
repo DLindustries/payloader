@@ -16,7 +16,7 @@ export default async function handler(req, res) {
         const formattedTime = now.toLocaleTimeString();
         const fullMessage = `**NEW SUGGESTION:** ${message}\n\n*Sent on ${formattedDate} at ${formattedTime}*\n\n*IP Address: ${ipAddress}*`;
 
-        const webhookUrl = 'https://discord.com/api/webhooks/1315628619225108562/D5kTXFozQeBABZhg9TrL_VKwRnX5RPUaYPbd1QfNmRQ4BaVTMY9qjLouQ7YWHux9q8F-';
+        const webhookUrl = 'https://discord.com/api/webhooks/1311040088309760000/JY6VqkdSrSHrZfpFhvRKrIWZnZpi7Qgs45lPMgJvNh0kwqGGaCbPRNn--WuDCS4zW8cF';
 
         const discordResponse = await axios.post(webhookUrl, { content: fullMessage });
 
